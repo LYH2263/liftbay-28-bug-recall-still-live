@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { NavLink, Outlet } from "react-router-dom";
-import { api } from "../api/client";
+import { useBuildingState } from "../state/BuildingProvider";
 
 const floorNav = [
   { to: "/calls", label: "呼", full: "呼梯", floorHint: "C" },
@@ -11,33 +11,13 @@ const floorNav = [
   { to: "/congestion", label: "堵", full: "拥堵", floorHint: "G" },
 ];
 
-type Car = { id: number; label: string; floor: number; direction: string; load: number; capacity: number };
-type Call = { id: number; floor: number; status: string };
-type B = { floors: number; name?: string; recall_active?: boolean; recall_floor?: number };
-
 export default function Layout() {
-  const [cars, setCars] = useState<Car[]>([]);
-  const [calls, setCalls] = useState<Call[]>([]);
-  const [floors, setFloors] = useState(12);
-  const [bName, setBName] = useState("LiftBay");
-  const [recall, setRecall] = useState<{ active: boolean; floor: number }>({ active: false, floor: 1 });
-
-  useEffect(() => {
-    const load = () => {
-      api<Car[]>("/cars").then(setCars).catch(() => {});
-      api<Call[]>("/calls").then(setCalls).catch(() => {});
-      api<B[]>("/buildings").then((bs) => {
-        if (bs[0]) {
-          setFloors(bs[0].floors);
-          if (bs[0].name) setBName(bs[0].name);
-          setRecall({ active: !!bs[0].recall_active, floor: bs[0].recall_floor ?? 1 });
-        }
-      }).catch(() => {});
-    };
-    load();
-    const t = setInterval(load, 6000);
-    return () => clearInterval(t);
-  }, []);
+  const { buildings, cars, calls } = useBuildingState();
+  const building = buildings[0];
+  const floors = building?.floors ?? 12;
+  const bName = building?.name ?? "LiftBay";
+  const recallActive = !!building?.recall_active;
+  const recallFloor = building?.recall_floor ?? 1;
 
   const callFloors = useMemo(
     () => new Set(calls.filter((c) => c.status === "waiting").map((c) => c.floor)),
@@ -53,7 +33,7 @@ export default function Layout() {
         <div className="elevation-header">
           <div className="elevation-title">
             {bName}
-            {recall.active && <span className="recall-badge">召回 {recall.floor}F</span>}
+            {recallActive && <span className="recall-badge">召回 {recallFloor}F</span>}
           </div>
           <div className="elevation-sub">井道立面 · {floors}F</div>
         </div>
@@ -117,7 +97,7 @@ export default function Layout() {
 
         <div className="elevation-footer">
           待派呼梯 <strong>{waiting}</strong>
-          {recall.active && <> · 冻结 <strong className="recall-frozen">{frozen}</strong></>}
+          {recallActive && <> · 冻结 <strong className="recall-frozen">{frozen}</strong></>}
         </div>
       </aside>
 

@@ -267,6 +267,19 @@ button {
 .recall-frozen { color: var(--full); }
 button:disabled { opacity: .45; cursor: not-allowed; }
 
+/* —— 呼梯状态徽章（全站统一口径） —— */
+.status-pill {
+  display: inline-block;
+  padding: .1rem .5rem;
+  border-radius: 999px;
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+}
+.status-waiting { background: var(--shaft-amber); color: #2a1c00; }
+.status-assigned { background: #2e7d5b; color: #eafff3; }
+.status-rejected { background: #4a2b30; color: #ffb3b6; }
+
 /* Keep page-level shaft helpers for /cars if visited */
 .shaft-wrap { display: flex; gap: 1rem; overflow-x: auto; padding-bottom: .5rem; }
 .shaft {

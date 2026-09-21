@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
-import { api } from "../api/client";
-type Log = { id: number; call_id: number | null; car_id: number | null; detail: string; created_at: string };
+import { getReplay } from "../api/client";
+import { usePolling } from "../state/BuildingProvider";
+
 export default function ReplayPage() {
-  const [rows, setRows] = useState<Log[]>([]);
-  useEffect(() => { api<Log[]>("/replay").then(setRows); }, []);
+  const rows = usePolling(getReplay) ?? [];
   return (<>
     <h2>回放</h2>
     <table className="table"><thead><tr><th>时间</th><th>呼梯</th><th>轿厢</th><th>详情</th></tr></thead>

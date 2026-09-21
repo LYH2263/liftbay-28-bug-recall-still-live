@@ -64,6 +64,9 @@ def score_car(car: CarState, call: CallRequest) -> ScoreResult:
 
 
 def pick_car(cars: list[CarState], call: CallRequest) -> ScoreResult | None:
+    # 召回冻结单不参与派工
+    if call.status == "frozen":
+        return None
     results = [score_car(c, call) for c in cars]
     accepted = [r for r in results if r.accepted]
     if not accepted:
@@ -94,7 +97,8 @@ def recall_car_state(car: CarState, recall_floor: int) -> CarState:
 def congestion_by_floor(calls: list[CallRequest]) -> dict[int, int]:
     counts: dict[int, int] = {}
     for c in calls:
-        if c.status not in ("waiting", "frozen"):
+        # 召回冻结单不计入候梯拥堵
+        if c.status != "waiting":
             continue
         counts[c.floor] = counts.get(c.floor, 0) + c.passengers
     return counts
