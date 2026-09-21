@@ -41,6 +41,9 @@ DISTANCE_WEIGHT = 5.0
 
 
 def score_car(car: CarState, call: CallRequest) -> ScoreResult:
+    if call.status == "frozen":
+        return ScoreResult(car.car_id, -1e9, False, "呼梯冻结，召回期间拒绝派工")
+
     if car.load + call.passengers > car.capacity:
         return ScoreResult(car.car_id, -1e9, False, "轿厢满员")
 
@@ -94,7 +97,7 @@ def recall_car_state(car: CarState, recall_floor: int) -> CarState:
 def congestion_by_floor(calls: list[CallRequest]) -> dict[int, int]:
     counts: dict[int, int] = {}
     for c in calls:
-        if c.status not in ("waiting", "frozen"):
+        if c.status != "waiting":
             continue
         counts[c.floor] = counts.get(c.floor, 0) + c.passengers
     return counts

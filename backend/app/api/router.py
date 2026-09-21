@@ -58,7 +58,7 @@ def set_recall(building_id: int, body: RecallRequest, db: Session = Depends(get_
             recalled = recall_car_state(
                 CarState(c.id, c.floor, c.direction, c.load, c.capacity), b.recall_floor
             )
-            c.floor, c.direction = recalled.floor, recalled.direction
+            c.floor, c.direction, c.load = recalled.floor, recalled.direction, recalled.load
         b.recall_active = True
         db.add(
             DispatchLog(
@@ -104,6 +104,8 @@ def create_call(body: CallCreate, db: Session = Depends(get_db)):
     b = db.get(Building, body.building_id)
     if not b:
         raise HTTPException(404, "楼栋不存在")
+    if b.recall_active:
+        raise HTTPException(409, "消防召回进行中：禁止新登记呼梯")
     if body.floor > b.floors:
         raise HTTPException(400, "楼层超出")
     if body.direction not in ("up", "down"):
@@ -125,9 +127,13 @@ def dispatch(body: DispatchRequest, db: Session = Depends(get_db)):
     ticket = db.get(CallTicket, body.call_id)
     if not ticket:
         raise HTTPException(404, "呼梯不存在")
-    if ticket.status not in ("waiting", "frozen"):
+    if ticket.status == "frozen":
+        raise HTTPException(409, "呼梯冻结：消防召回期间禁止派工")
+    if ticket.status != "waiting":
         raise HTTPException(400, "呼梯已处理")
     building = db.get(Building, ticket.building_id)
+    if building and building.recall_active:
+        raise HTTPException(409, "消防召回进行中：禁止派工")
     car_rows = db.scalars(
         select(ElevatorCar).where(ElevatorCar.building_id == ticket.building_id)
     ).all()
@@ -170,7 +176,7 @@ def replay(db: Session = Depends(get_db)):
 @api_router.get("/congestion", response_model=list[CongestionFloor])
 def congestion(db: Session = Depends(get_db)):
     open_calls = db.scalars(
-        select(CallTicket).where(CallTicket.status.in_(["waiting", "frozen"]))
+        select(CallTicket).where(CallTicket.status == "waiting")
     ).all()
     counts = congestion_by_floor(
         [CallRequest(c.id, c.floor, c.direction, c.passengers, c.status) for c in open_calls]

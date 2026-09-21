@@ -5,7 +5,11 @@ export default function BuildingsPage() {
   const [rows, setRows] = useState<B[]>([]);
   const [err, setErr] = useState("");
   const reload = () => api<B[]>("/buildings").then(setRows);
-  useEffect(() => { reload(); }, []);
+  useEffect(() => {
+    reload();
+    const t = setInterval(reload, 6000);
+    return () => clearInterval(t);
+  }, []);
   async function toggle(b: B) {
     setErr("");
     try {

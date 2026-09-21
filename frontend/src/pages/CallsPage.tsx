@@ -10,10 +10,15 @@ export default function CallsPage() {
   const [dir, setDir] = useState("up");
   const [pax, setPax] = useState(1);
   const [err, setErr] = useState("");
-  const reload = () => api<Call[]>("/calls").then(setRows);
+  const reload = () => {
+    api<Call[]>("/calls").then(setRows);
+    api<B[]>("/buildings").then(setBuildings).catch(() => {});
+  };
   useEffect(() => {
     api<B[]>("/buildings").then(b => { setBuildings(b); if (b[0]) setBid(b[0].id); });
     reload();
+    const t = setInterval(reload, 6000);
+    return () => clearInterval(t);
   }, []);
   const cur = buildings.find(b => b.id === bid);
   async function create() {

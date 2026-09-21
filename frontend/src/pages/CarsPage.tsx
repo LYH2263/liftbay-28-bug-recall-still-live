@@ -8,9 +8,14 @@ export default function CarsPage() {
   const [calls, setCalls] = useState<Call[]>([]);
   const [building, setBuilding] = useState<B | null>(null);
   useEffect(() => {
-    api<Car[]>("/cars").then(setCars);
-    api<Call[]>("/calls").then(setCalls);
-    api<B[]>("/buildings").then(bs => { if (bs[0]) setBuilding(bs[0]); });
+    const reload = () => {
+      api<Car[]>("/cars").then(setCars);
+      api<Call[]>("/calls").then(setCalls);
+      api<B[]>("/buildings").then(bs => { if (bs[0]) setBuilding(bs[0]); }).catch(() => {});
+    };
+    reload();
+    const t = setInterval(reload, 6000);
+    return () => clearInterval(t);
   }, []);
   const floors = building?.floors ?? 18;
   const callFloors = useMemo(() => new Set(calls.filter(c => c.status === "waiting").map(c => c.floor)), [calls]);
